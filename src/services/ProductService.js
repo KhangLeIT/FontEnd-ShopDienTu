@@ -1,246 +1,61 @@
-const Product = require("../models/ProductModel")
+import axios from "axios"
+import { axiosJWT } from "./UserService"
 
-const createProduct = (newProduct) => {
-    return new Promise(async (resolve, reject) => {
-        const { name, image, type, countInStock, price, rating, description, discount } = newProduct
-        try {
-            const checkProduct = await Product.findOne({
-                name: name
-            })
-            if (checkProduct !== null) {
-                resolve({
-                    status: 'ERR',
-                    message: 'The name of product is already'
-                })
-            }
-            const newProduct = await Product.create({
-                name,
-                image,
-                type,
-                countInStock: Number(countInStock),
-                price,
-                rating,
-                description,
-                discount: Number(discount),
-            })
-            if (newProduct) {
-                resolve({
-                    status: 'OK',
-                    message: 'SUCCESS',
-                    data: newProduct
-                })
-            }
-        } catch (e) {
-            reject(e)
-        }
-    })
+export const getAllProduct = async (search, limit) => {
+    let res = {}
+    if (search?.length > 0) {
+        res = await axios.get(`${process.env.REACT_APP_API_URL}/product/get-all?filter=name&filter=${search}&limit=${limit}`)
+    } else {
+        res = await axios.get(`${process.env.REACT_APP_API_URL}/product/get-all?limit=${limit}`)
+    }
+    return res.data
 }
 
-const updateProduct = (id, data) => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            const checkProduct = await Product.findOne({
-                _id: id
-            })
-            if (checkProduct === null) {
-                resolve({
-                    status: 'ERR',
-                    message: 'The product is not defined'
-                })
-            }
-
-            const updatedProduct = await Product.findByIdAndUpdate(id, data, { new: true })
-            resolve({
-                status: 'OK',
-                message: 'SUCCESS',
-                data: updatedProduct
-            })
-        } catch (e) {
-            reject(e)
-        }
-    })
+export const getProductType = async (type, page, limit) => {
+    if (type) {
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/product/get-all?filter=type&filter=${type}&limit=${limit}&page=${page}`)
+        return res.data
+    }
 }
 
-const deleteProduct = (id) => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            const checkProduct = await Product.findOne({
-                _id: id
-            })
-            if (checkProduct === null) {
-                resolve({
-                    status: 'ERR',
-                    message: 'The product is not defined'
-                })
-            }
-
-            await Product.findByIdAndDelete(id)
-            resolve({
-                status: 'OK',
-                message: 'Delete product success',
-            })
-        } catch (e) {
-            reject(e)
-        }
-    })
+export const createProduct = async (data) => {
+    const res = await axios.post(`${process.env.REACT_APP_API_URL}/product/create`, data)
+    return res.data
 }
 
-const deleteManyProduct = (ids) => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            await Product.deleteMany({ _id: ids })
-            resolve({
-                status: 'OK',
-                message: 'Delete product success',
-            })
-        } catch (e) {
-            reject(e)
-        }
-    })
+export const getDetailsProduct = async (id) => {
+    const res = await axios.get(`${process.env.REACT_APP_API_URL}/product/get-details/${id}`)
+    return res.data
 }
 
-const getDetailsProduct = (id) => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            const product = await Product.findOne({
-                _id: id
-            })
-            if (product === null) {
-                resolve({
-                    status: 'ERR',
-                    message: 'The product is not defined'
-                })
-            }
-
-            resolve({
-                status: 'OK',
-                message: 'SUCESS',
-                data: product
-            })
-        } catch (e) {
-            reject(e)
+export const updateProduct = async (id, access_token, data) => {
+    const res = await axiosJWT.put(`${process.env.REACT_APP_API_URL}/product/update/${id}`, data, {
+        headers: {
+            token: `Bearer ${access_token}`,
         }
     })
+    return res.data
 }
-const getAllProduct = (limit, page, sort, filter) => {
-    // limit, page, sort, filter
-    return new Promise(async (resolve, reject) => {
-        try {
-            const totalProduct = await Product.collection.count()
-            
-            if (filter) {
-                const label = filter[0];
-                const regexPattern = new RegExp(filter[1], 'i');  //'i'  (chữ hoa và thường)
-                const allObjectFilter = await Product.find({ [label]: { '$regex': regexPattern } })
-                resolve({
-                    status: 'OK',
-                    message: 'Success',
-                    data: allObjectFilter,
-                    total: totalProduct,
-                    pageCurrent: Number(page + 1),
-                    totalPage: Math.ceil(totalProduct / limit)
-                })
-            }
-            if (sort) {
-                const objectSort = {}
-                objectSort[sort[1]] = sort[0]
-                const allProductSort = await Product.find().limit(limit).skip(page * limit).sort(objectSort)
-                resolve({
-                    status: 'OK',
-                    message: 'Success',
-                    data: allProductSort,
-                    total: totalProduct,
-                    pageCurrent: Number(page + 1),
-                    totalPage: Math.ceil(totalProduct / limit)
-                })
-            }
-            const allProduct = await Product.find().limit(limit).skip(page * limit)
-            resolve({
-                status: 'ok',
-                message: 'Success',
-                data: allProduct,
-                total: totalProduct,
-                pageCurrent: Number(page + 1),
-                totalPage: Math.ceil(totalProduct / limit)
-            })
 
-        } catch (e) {
-            reject(e)
+export const deleteProduct = async (id, access_token) => {
+    const res = await axiosJWT.delete(`${process.env.REACT_APP_API_URL}/product/delete/${id}`, {
+        headers: {
+            token: `Bearer ${access_token}`,
         }
     })
+    return res.data
 }
 
-
-// const getAllProduct = (limit, page, sort, filter) => {
-//     return new Promise(async (resolve, reject) => {
-//         try {
-//             const totalProduct = await Product.count()
-//             let allProduct = []
-//             if (filter) {
-//                 const label = filter[0];
-//                 const allObjectFilter = await Product.find({ [label]: { '$regex': filter[1] } }).limit(limit).skip(page * limit).sort({createdAt: -1, updatedAt: -1})
-//                 resolve({
-//                     status: 'OK',
-//                     message: 'Success',
-//                     data: allObjectFilter,
-//                     total: totalProduct,
-//                     pageCurrent: Number(page + 1),
-//                     totalPage: Math.ceil(totalProduct / limit)
-//                 })
-//             }
-//             if (sort) {
-//                 const objectSort = {}
-//                 objectSort[sort[1]] = sort[0]
-//                 const allProductSort = await Product.find().limit(limit).skip(page * limit).sort(objectSort).sort({createdAt: -1, updatedAt: -1})
-//                 resolve({
-//                     status: 'OK',
-//                     message: 'Success',
-//                     data: allProductSort,
-//                     total: totalProduct,
-//                     pageCurrent: Number(page + 1),
-//                     totalPage: Math.ceil(totalProduct / limit)
-//                 })
-//             }
-//             if(!limit) {
-//                 allProduct = await Product.find().sort({createdAt: -1, updatedAt: -1})
-//             }else {
-//                 allProduct = await Product.find().limit(limit).skip(page * limit).sort({createdAt: -1, updatedAt: -1})
-//             }
-//             resolve({
-//                 status: 'OK',
-//                 message: 'Success',
-//                 data: allProduct,
-//                 total: totalProduct,
-//                 pageCurrent: Number(page + 1),
-//                 totalPage: Math.ceil(totalProduct / limit)
-//             })
-//         } catch (e) {
-//             reject(e)
-//         }
-//     })
-// }
-
-const getAllType = () => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            const allType = await Product.distinct('type')
-            resolve({
-                status: 'OK',
-                message: 'Success',
-                data: allType,
-            })
-        } catch (e) {
-            reject(e)
+export const deleteManyProduct = async (data, access_token,) => {
+    const res = await axiosJWT.post(`${process.env.REACT_APP_API_URL}/product/delete-many`, data, {
+        headers: {
+            token: `Bearer ${access_token}`,
         }
     })
+    return res.data
 }
 
-module.exports = {
-    createProduct,
-    updateProduct,
-    getDetailsProduct,
-    deleteProduct,
-    getAllProduct,
-    deleteManyProduct,
-    getAllType
+export const getAllTypeProduct = async () => {
+    const res = await axios.get(`${process.env.REACT_APP_API_URL}/product/get-all-type`)
+    return res.data
 }
