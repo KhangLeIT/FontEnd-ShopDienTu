@@ -1,31 +1,25 @@
-const express = require("express");
-const dotenv = require('dotenv');
-const mongoose = require("mongoose");
-const routes = require('./routes')
-const cors = require('cors');
-const cookieParser = require('cookie-parser')
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import './index.css';
+import App from './App';
+import reportWebVitals from './reportWebVitals';
+import { store } from './redux/store'
+import { Provider } from 'react-redux'
 
-const app = express();
-const port = process.env.PORT || 3001;
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
-dotenv.config();
-
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
-
-app.use(cookieParser());
-
-routes(app);
-
-mongoose.connect(`${process.env.MONGO_DB}`)
-    .then(() => {
-        // console.log('Connect Db success!')
-    })
-    .catch((err) => {
-        // console.log(err)
-    });
+const root = ReactDOM.createRoot(document.getElementById('root'));
+const queryClient = new QueryClient()
+root.render(
+  <QueryClientProvider client={queryClient}>
+  <Provider store={store}>
     
-app.listen(port, () => {
-    // console.log('Server is running in port: ', + port)
-});
+      <App />
+    
+  </Provider>
+  <ReactQueryDevtools initialIsOpen={false} />
+</QueryClientProvider>
+);
+
+reportWebVitals();
